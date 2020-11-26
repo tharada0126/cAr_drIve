@@ -47,7 +47,7 @@ MonoBehaviour:
     vectorActionSize: 02000000
     vectorActionDescriptions: []
     vectorActionSpaceType: 1
-  m_Model: {fileID: 5022602860645237092, guid: bba7443b989d4bc47909b37c2ef46e11, type: 3}
+  m_Model: {fileID: 5022602860645237092, guid: 36be88ee46f845542a92474123b7a79a, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 0
   m_BehaviorName: CarDrive
@@ -76,6 +76,8 @@ MonoBehaviour:
   id: 0
   time: 0
   generateNew: 0
+  generateInterval: 300
+  noise: 0
 --- !u!114 &7510071750350709317
 MonoBehaviour:
   m_ObjectHideFlags: 0

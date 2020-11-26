@@ -21,10 +21,13 @@ public class CarAgent : Agent
 
     public int time = 0;
     public bool generateNew = true;
+    public int generateInterval = 300;
+    public float noise = 0.0f;
 
     private Vector3 _initPosition;
     private Quaternion _initRotation;
     private int _notMoveCount = 0;
+    private Evaluator evaluator = Evaluator.getInstance();
     public override void Initialize()
     {
         GetTrackIncrement();
@@ -38,7 +41,7 @@ public class CarAgent : Agent
     {
         if(!generateNew || id != 0) return;
         //Debug.Log(time);
-        if(time > 500){
+        if(time > generateInterval){
             //Debug.Log("add new car");
             var gameObject = Instantiate(this, _initPosition, _initRotation);
             new_id++;
@@ -70,6 +73,8 @@ public class CarAgent : Agent
     {
         float horizontal = vectorAction[0];
         float vertical = vectorAction[1];
+        vertical = Mathf.Clamp(vertical, -1.0f, 1.0f);
+        horizontal = Mathf.Clamp(horizontal, -1.0f, 1.0f);
 
         var lastPos = transform.position;
         MoveCar(horizontal, vertical, Time.fixedDeltaTime);
@@ -88,7 +93,10 @@ public class CarAgent : Agent
         }
         //*/
         float angle = Vector3.Angle(moveVec, _track.forward);
-        float bonus = (1f - angle / 90f) * Mathf.Clamp01(vertical) * Time.fixedDeltaTime;
+        //float bonus = (1f - angle / 90f) * Mathf.Clamp01(vertical) * Time.fixedDeltaTime;
+        //float bonus = (1f - angle / 90f) * Mathf.Clamp01(Mathf.Abs(vertical)) * Time.fixedDeltaTime;
+        //float bonus = ((1f - angle / 90f) + vertical) * Time.fixedDeltaTime;
+        float bonus = ((1f - angle / 90f) * Mathf.Clamp01(Mathf.Max(0, vertical)) + Mathf.Min(0, vertical)) * Time.fixedDeltaTime;
         AddReward(bonus + reward);
 
         score += reward;
@@ -302,7 +310,7 @@ public class CarAgent : Agent
                 //rotation = agent.transform.rotation;
             }
         }
-        return hit.distance >= 0 ? hit.distance / RAY_DIST : -1f;
+        return hit.distance >= 0 ? (hit.distance / RAY_DIST) * Random.Range(1-noise, 1+noise) : -1f;
     }
 
     private int GetTrackIncrement()
@@ -319,6 +327,9 @@ public class CarAgent : Agent
             {
                 float angle = Vector3.Angle(_track.forward, newHit.position - _track.position);
                 reward = (angle < 90f) ? 1 : -1;
+                if (newHit.GetComponent<Collider>().tag == "startTile"){
+                    evaluator.addThroughCars(Time.realtimeSinceStartup);
+                }
             }
 
             _track = newHit;
@@ -335,6 +346,7 @@ public class CarAgent : Agent
             //transform.localPosition = new Vector3(0, 0, 5 - id * 7);
             transform.localPosition = _initPosition;
             transform.localRotation = _initRotation;
+            this.speed = Random.Range(5, 16);
             //transform.localRotation = Quaternion.identity;
             //time = 0;
         }
@@ -351,8 +363,14 @@ public class CarAgent : Agent
                 var otherAgent = (CarAgent)other.gameObject.GetComponent(typeof(CarAgent));
                 if(this.id < otherAgent.id)
                 {
-                    Destroy(other.gameObject);
+                    evaluator.addCrashCars(Time.realtimeSinceStartup);
+                    if(generateNew){
+                        Destroy(other.gameObject);
+                    }
                 }
+            }
+            else{
+                    evaluator.addCrashCars(Time.realtimeSinceStartup);
             }
         }
     }
