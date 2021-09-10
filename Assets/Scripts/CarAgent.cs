@@ -17,7 +17,7 @@ public class CarAgent : Agent
     public int id = 0;
     private int new_id = 0;
 
-    private Transform _track;
+    private Transform _track, _prev_track;
 
     public int time = 0;
     public bool generateNew = true;
@@ -39,12 +39,12 @@ public class CarAgent : Agent
 
     void Update()
     {
-        if(!generateNew || id != 0) return;
+        if(!generateNew || id > 1) return;
         //Debug.Log(time);
         if(time > generateInterval){
             //Debug.Log("add new car");
             var gameObject = Instantiate(this, _initPosition, _initRotation);
-            new_id++;
+            new_id += 2;
             gameObject.id = new_id;
             gameObject.transform.parent = this.transform.parent.gameObject.transform;
             gameObject.transform.localPosition = _initPosition;
@@ -79,7 +79,7 @@ public class CarAgent : Agent
         var lastPos = transform.position;
         MoveCar(horizontal, vertical, Time.fixedDeltaTime);
 
-        int reward = GetTrackIncrement();
+        float reward = GetTrackIncrement();
         
         var moveVec = transform.position - lastPos;
         /*
@@ -98,8 +98,14 @@ public class CarAgent : Agent
         //float bonus = ((1f - angle / 90f) + vertical) * Time.fixedDeltaTime;
         float bonus = ((1f - angle / 90f) * Mathf.Clamp01(Mathf.Max(0, vertical)) + Mathf.Min(0, vertical)) * Time.fixedDeltaTime;
         AddReward(bonus + reward);
+        if(foundCarBackward){
+            evaluator.addBehavior(Time.realtimeSinceStartup, speed, false, vectorAction);
+        }
+        if(foundCarForward){
+            evaluator.addBehavior(Time.realtimeSinceStartup, speed, true, vectorAction);
+        }
 
-        score += reward;
+        score += (int)reward;
     }
 
     public override float[] Heuristic()
@@ -110,9 +116,12 @@ public class CarAgent : Agent
         return action;
     }
 
+    private bool foundCarForward, foundCarBackward;
     public override void CollectObservations(VectorSensor vectorSensor)
     {
         float angle = Vector3.SignedAngle(_track.forward, transform.forward, Vector3.up);
+        foundCarBackward = false;
+        foundCarForward = false;
 
         vectorSensor.AddObservation(angle / 180f);
         //float speed, torque;
@@ -128,6 +137,7 @@ public class CarAgent : Agent
         vectorSensor.AddObservation(diff.y);
         if(tag == "car"){
             vectorSensor.AddObservation(1);
+            foundCarForward = true;
         }
         else{
             vectorSensor.AddObservation(0);
@@ -147,6 +157,7 @@ public class CarAgent : Agent
         vectorSensor.AddObservation(diff.y);
         if(tag == "car"){
             vectorSensor.AddObservation(1);
+            foundCarForward = true;
         }
         else{
             vectorSensor.AddObservation(0);
@@ -166,6 +177,7 @@ public class CarAgent : Agent
         vectorSensor.AddObservation(diff.y);
         if(tag == "car"){
             vectorSensor.AddObservation(1);
+            foundCarForward = true;
         }
         else{
             vectorSensor.AddObservation(0);
@@ -185,6 +197,7 @@ public class CarAgent : Agent
         vectorSensor.AddObservation(diff.y);
         if(tag == "car"){
             vectorSensor.AddObservation(1);
+            foundCarBackward = true;
         }
         else{
             vectorSensor.AddObservation(0);
@@ -204,6 +217,7 @@ public class CarAgent : Agent
         vectorSensor.AddObservation(diff.y);
         if(tag == "car"){
             vectorSensor.AddObservation(1);
+            foundCarBackward = true;
         }
         else{
             vectorSensor.AddObservation(0);
@@ -223,6 +237,7 @@ public class CarAgent : Agent
         vectorSensor.AddObservation(diff.y);
         if(tag == "car"){
             vectorSensor.AddObservation(1);
+            foundCarBackward = true;
         }
         else{
             vectorSensor.AddObservation(0);
@@ -313,9 +328,9 @@ public class CarAgent : Agent
         return hit.distance >= 0 ? (hit.distance / RAY_DIST) * Random.Range(1-noise, 1+noise) : -1f;
     }
 
-    private int GetTrackIncrement()
+    private float GetTrackIncrement()
     {
-        int reward = 0;
+        float reward = 0;
         var carCenter = transform.position + Vector3.up;
 
         // Find what tile I'm on
@@ -323,16 +338,30 @@ public class CarAgent : Agent
         {
             var newHit = hit.transform;
             // Check if the tile has changed
-            if (_track != null && newHit != _track)
+            if(_track == null){
+                _prev_track = _track;
+                _track = newHit;
+            }
+            else if (newHit != _track) // 別のタイルに移動
             {
-                float angle = Vector3.Angle(_track.forward, newHit.position - _track.position);
-                reward = (angle < 90f) ? 1 : -1;
+                var relPos = transform.position - newHit.position;
+                evaluator.addHorizontalSensor(Time.realtimeSinceStartup, relPos.x * newHit.forward.z - relPos.z * newHit.forward.x, relPos.x * newHit.forward.x - relPos.z * newHit.forward.z, this.id, this.speed);
+                if(newHit == _prev_track){ // 1回前のタイルに移動したらペナルティ
+                    reward = -1;
+                }
+                else{ // 前向きに移動していたら+1, 後ろ向きに移動していたら-1
+                    float angle = Vector3.Angle(_track.forward, newHit.position - _track.position);
+                    reward = (angle < 90f) ? 1 : -1;
+                }
                 if (newHit.GetComponent<Collider>().tag == "startTile"){
                     evaluator.addThroughCars(Time.realtimeSinceStartup);
                 }
+                _prev_track = _track;
+                _track = newHit;
             }
-
-            _track = newHit;
+            else {
+                reward = -0.01f;
+            }
         }
 
         return reward;
@@ -356,7 +385,8 @@ public class CarAgent : Agent
     {
         if (other.gameObject.CompareTag("wall") || other.gameObject.CompareTag("car"))
         {
-            SetReward(-1f);
+            // increased from -1f -> -10f
+            SetReward(-10f);
             EndEpisode();
             if(other.gameObject.CompareTag("car"))
             {

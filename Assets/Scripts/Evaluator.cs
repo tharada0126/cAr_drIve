@@ -1,4 +1,5 @@
 using UnityEngine;
+using MLAgents.Sensors;
 using System.IO;
 class Evaluator{
     public int ThroughCars{
@@ -6,7 +7,7 @@ class Evaluator{
         private set;
     }
     private static Evaluator instance = null;
-    private StreamWriter logThroughput, logCrash;
+    private StreamWriter logThroughput, logCrash, logDistance, logBehavior;
     private Evaluator(){
         ThroughCars = 0;
         NumCrash = 0;
@@ -17,6 +18,12 @@ class Evaluator{
         logCrash = new StreamWriter("logCrash.csv");
         logCrash.WriteLine("time,num");
         logCrash.Close();
+        logDistance = new StreamWriter("logDistance.csv");
+        logDistance.WriteLine("time,x,y,id,speed");
+        logDistance.Close();
+        logBehavior = new StreamWriter("logBehavior.csv");
+        logBehavior.WriteLine("time,my_speed,forward,verticle,horizontal");
+        logBehavior.Close();
     }
     public static Evaluator getInstance(){
         if(instance == null){ instance = new Evaluator(); }
@@ -48,5 +55,22 @@ class Evaluator{
         logCrash.WriteLine(Time.ToString() + "," + NumCrash.ToString());
         logCrash.Close();
         return NumCrash;
+    }
+
+    public void addHorizontalSensor(double time, double left, double right, int id, double speed){
+        //Debug.Log("Crash cars: " + NumCrash.ToString() + " at " + Time.ToString());
+        logDistance = new StreamWriter("logDistance.csv", true);
+        logDistance.WriteLine(time.ToString() + "," + left.ToString() + "," + right.ToString() + "," + id.ToString() + "," + speed.ToString());
+        logDistance.Close();
+
+    }
+
+    public void addBehavior(double time, double my_speed, bool foundCarForward, float[] vectorAction){
+        //Debug.Log("Crash cars: " + NumCrash.ToString() + " at " + Time.ToString());
+        logBehavior = new StreamWriter("logBehavior.csv", true);
+        logBehavior.Write(time.ToString() + "," + my_speed.ToString() + ",");
+        logBehavior.WriteLine(foundCarForward.ToString() + "," + vectorAction[0].ToString() + "," + vectorAction[1].ToString());
+        logBehavior.Close();
+
     }
 }
