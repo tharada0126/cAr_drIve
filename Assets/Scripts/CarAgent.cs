@@ -68,6 +68,7 @@ public class CarAgent : Agent
         prevHorizontal = horizontal;
         prevVertical = vertical;
     }
+    private List<float> prev_observations;
 
     public override void OnActionReceived(float[] vectorAction)
     {
@@ -106,6 +107,8 @@ public class CarAgent : Agent
         }
 
         score += (int)reward;
+
+        evaluator.addFullData(Time.frameCount, transform.position, prev_observations, horizontal, vertical);
     }
 
     public override float[] Heuristic()
@@ -119,175 +122,180 @@ public class CarAgent : Agent
     private bool foundCarForward, foundCarBackward;
     public override void CollectObservations(VectorSensor vectorSensor)
     {
+        List<float> observations = new List<float>();
         float angle = Vector3.SignedAngle(_track.forward, transform.forward, Vector3.up);
         foundCarBackward = false;
         foundCarForward = false;
 
-        vectorSensor.AddObservation(angle / 180f);
+        observations.Add(angle / 180f);
         //float speed, torque;
         string tag;
         //Quaternion rotation;
         Vector3 diff;
         //vectorSensor.AddObservation(ObserveRay(1.5f, .5f, 25f, out speed, out torque, out rotation, out tag));
-        vectorSensor.AddObservation(ObserveRay(1.5f, .5f, 25f, out diff, out tag));
+        observations.Add(ObserveRay(1.5f, .5f, 25f, out diff, out tag));
         //vectorSensor.AddObservation((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
         //vectorSensor.AddObservation(speed);
         //vectorSensor.AddObservation(torque);
-        vectorSensor.AddObservation(diff.x);
-        vectorSensor.AddObservation(diff.y);
+        observations.Add(diff.x);
+        observations.Add(diff.y);
         if(tag == "car"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
             foundCarForward = true;
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         if(tag == "wall"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         //vectorSensor.AddObservation(ObserveRay(1.5f, 0f, 0f, out speed, out torque, out rotation, out tag));
-        vectorSensor.AddObservation(ObserveRay(1.5f, 0f, 0f, out diff, out tag));
+        observations.Add(ObserveRay(1.5f, 0f, 0f, out diff, out tag));
         //vectorSensor.AddObservation((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
         //vectorSensor.AddObservation(speed);
         //vectorSensor.AddObservation(torque);
-        vectorSensor.AddObservation(diff.x);
-        vectorSensor.AddObservation(diff.y);
+        observations.Add(diff.x);
+        observations.Add(diff.y);
         if(tag == "car"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
             foundCarForward = true;
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         if(tag == "wall"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
-        //vectorSensor.AddObservation(ObserveRay(1.5f, -.5f, -25f, out speed, out torque, out rotation, out tag));
-        vectorSensor.AddObservation(ObserveRay(1.5f, -.5f, -25f, out diff, out tag));
-        //vectorSensor.AddObservation((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
-        //vectorSensor.AddObservation(speed);
-        //vectorSensor.AddObservation(torque);
-        vectorSensor.AddObservation(diff.x);
-        vectorSensor.AddObservation(diff.y);
+        //observations.Add(ObserveRay(1.5f, -.5f, -25f, out speed, out torque, out rotation, out tag));
+        observations.Add(ObserveRay(1.5f, -.5f, -25f, out diff, out tag));
+        //observations.Add((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
+        //observations.Add(speed);
+        //observations.Add(torque);
+        observations.Add(diff.x);
+        observations.Add(diff.y);
         if(tag == "car"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
             foundCarForward = true;
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         if(tag == "wall"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
-        //vectorSensor.AddObservation(ObserveRay(-1.5f, .5f, 155f, out speed, out torque, out rotation, out tag));
-        vectorSensor.AddObservation(ObserveRay(-1.5f, .5f, 155f, out diff, out tag));
-        //vectorSensor.AddObservation((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
-        //vectorSensor.AddObservation(speed);
-        //vectorSensor.AddObservation(torque);
-        vectorSensor.AddObservation(diff.x);
-        vectorSensor.AddObservation(diff.y);
+        //observations.Add(ObserveRay(-1.5f, .5f, 155f, out speed, out torque, out rotation, out tag));
+        observations.Add(ObserveRay(-1.5f, .5f, 155f, out diff, out tag));
+        //observations.Add((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
+        //observations.Add(speed);
+        //observations.Add(torque);
+        observations.Add(diff.x);
+        observations.Add(diff.y);
         if(tag == "car"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
             foundCarBackward = true;
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         if(tag == "wall"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
-        //vectorSensor.AddObservation(ObserveRay(-1.5f, 0, 180f, out speed, out torque, out rotation, out tag));
-        vectorSensor.AddObservation(ObserveRay(-1.5f, 0f, 180f, out diff, out tag));
-        //vectorSensor.AddObservation((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
-        //vectorSensor.AddObservation(speed);
-        //vectorSensor.AddObservation(torque);
-        vectorSensor.AddObservation(diff.x);
-        vectorSensor.AddObservation(diff.y);
+        //observations.Add(ObserveRay(-1.5f, 0, 180f, out speed, out torque, out rotation, out tag));
+        observations.Add(ObserveRay(-1.5f, 0f, 180f, out diff, out tag));
+        //observations.Add((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
+        //observations.Add(speed);
+        //observations.Add(torque);
+        observations.Add(diff.x);
+        observations.Add(diff.y);
         if(tag == "car"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
             foundCarBackward = true;
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         if(tag == "wall"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
-        //vectorSensor.AddObservation(ObserveRay(-1.5f, -.5f, -155f, out speed, out torque, out rotation, out tag));
-        vectorSensor.AddObservation(ObserveRay(-1.5f, -.5f, -155f, out diff, out tag));
-        //vectorSensor.AddObservation((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
-        //vectorSensor.AddObservation(speed);
-        //vectorSensor.AddObservation(torque);
-        vectorSensor.AddObservation(diff.x);
-        vectorSensor.AddObservation(diff.y);
+        //observations.Add(ObserveRay(-1.5f, -.5f, -155f, out speed, out torque, out rotation, out tag));
+        observations.Add(ObserveRay(-1.5f, -.5f, -155f, out diff, out tag));
+        //observations.Add((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
+        //observations.Add(speed);
+        //observations.Add(torque);
+        observations.Add(diff.x);
+        observations.Add(diff.y);
         if(tag == "car"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
             foundCarBackward = true;
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         if(tag == "wall"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
-        //vectorSensor.AddObservation(ObserveRay(0f, .5f, 90f, out speed, out torque, out rotation, out tag));
-        vectorSensor.AddObservation(ObserveRay(0f, .5f, 90f, out diff, out tag));
-        //vectorSensor.AddObservation((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
-        //vectorSensor.AddObservation(speed);
-        //vectorSensor.AddObservation(torque);
-        vectorSensor.AddObservation(diff.x);
-        vectorSensor.AddObservation(diff.y);
+        //observations.Add(ObserveRay(0f, .5f, 90f, out speed, out torque, out rotation, out tag));
+        observations.Add(ObserveRay(0f, .5f, 90f, out diff, out tag));
+        //observations.Add((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
+        //observations.Add(speed);
+        //observations.Add(torque);
+        observations.Add(diff.x);
+        observations.Add(diff.y);
         if(tag == "car"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         if(tag == "wall"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
-        //vectorSensor.AddObservation(ObserveRay(0f, -.5f, -90f, out speed, out torque, out rotation, out tag));
-        vectorSensor.AddObservation(ObserveRay(0f, -.5f, -90f, out diff, out tag));
-        //vectorSensor.AddObservation((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
-        //vectorSensor.AddObservation(speed);
-        //vectorSensor.AddObservation(torque);
-        vectorSensor.AddObservation(diff.x);
-        vectorSensor.AddObservation(diff.y);
+        //observations.Add(ObserveRay(0f, -.5f, -90f, out speed, out torque, out rotation, out tag));
+        observations.Add(ObserveRay(0f, -.5f, -90f, out diff, out tag));
+        //observations.Add((180.0f + Quaternion.Angle(rotation, this.transform.rotation)) / 360.0f);
+        //observations.Add(speed);
+        //observations.Add(torque);
+        observations.Add(diff.x);
+        observations.Add(diff.y);
         if(tag == "car"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
         if(tag == "wall"){
-            vectorSensor.AddObservation(1);
+            observations.Add(1);
         }
         else{
-            vectorSensor.AddObservation(0);
+            observations.Add(0);
         }
-        vectorSensor.AddObservation(this.speed);
-        vectorSensor.AddObservation(this.torque);
+        observations.Add(this.speed);
+        observations.Add(this.torque);
+        foreach(var v in observations){
+            vectorSensor.AddObservation(v);
+        }
+        prev_observations = observations;
     }
 
     //private float ObserveRay(float z, float x, float angle, out float speed, out float torque, out Quaternion rotation, out string tag)
